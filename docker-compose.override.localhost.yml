@@ -1,0 +1,23 @@
+version: '2.2'
+services:
+
+  django:
+    build: .
+    # Loading the app is defined here to allow for
+    # autoreload on changes it is mounted on top of the
+    # old copy that docker added when creating the image
+    volumes:
+      - '.:/usr/src/app'
+    environment:
+      - DEBUG=False
+      - GEONODE_LB_HOST_IP=my_domain
+      - GEONODE_LB_PORT=80
+      - SITEURL=https://my_domain/
+      - ALLOWED_HOSTS=['my_domain', ]
+      - GEOSERVER_PUBLIC_LOCATION=https://my_domain/geoserver/
+      - GEOSERVER_WEB_UI_LOCATION=https://my_domain/geoserver/
+
+  geoserver:
+    environment:
+      - GEONODE_LB_HOST_IP=my_domain
+      - GEONODE_LB_PORT=80
