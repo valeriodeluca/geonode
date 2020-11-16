@@ -51,6 +51,8 @@ services:
 ---------------------------------------------------------
 Ctrl+x / y / Enter
 sudo docker-compose -f docker-compose.yml -f docker-compose.override.localhost.yml up --build -d
+# Browser Server_IP to check GeoNode home page.
+# Browser Server_Domain (Server_Subdomain) if you targeted a domain (or subdomain) to a Server_IP in your DNS Administration panel on your server provider.
 ====================
 SSL SETUP
 ====================
