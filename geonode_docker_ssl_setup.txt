@@ -1,3 +1,6 @@
+====================
+DOCKER SETUP
+====================
 cd
 sudo apt-get update
 sudo apt install -y screen
@@ -21,7 +24,7 @@ la
 nano docker-compose.override.localhost.yml
 # Replace localhost with your server IP
 # Set ALLOWED_HOSTS=['*']
-==========docker-compose.override.localhost.yml==========
+----------docker-compose.override.localhost.yml----------
 version: '2.2'
 services:
 
@@ -45,8 +48,11 @@ services:
     environment:
       - GEONODE_LB_HOST_IP=Server_IP
       - GEONODE_LB_PORT=80
-=========================================================
+---------------------------------------------------------
 Ctrl+x / y / Enter
 sudo docker-compose -f docker-compose.yml -f docker-compose.override.localhost.yml up --build -d
+====================
+SSL SETUP
+====================
 
 
