@@ -1,5 +1,7 @@
-https://docs.geonode.org/en/master/install/advanced/core/index.html#docker
-Install the Docker and docker-compose packages on a Ubuntu host
+# https://docs.geonode.org/en/master/install/advanced/core/index.html#docker
+-----------------------------------------------------------------
+# Install the Docker and docker-compose packages on a Ubuntu host
+-----------------------------------------------------------------
 sudo add-apt-repository universe
 sudo apt-get update -y
 sudo apt-get install -y git-core git-buildpackage debhelper devscripts
@@ -16,9 +18,13 @@ sudo adduser geonode
 sudo usermod -aG docker geonode
 su geonode
 cd
-Test Docker Compose Instance
+------------------------------
+# Test Docker Compose Instance
+------------------------------
 docker run -it hello-world
-Deploy a vanilla GeoNode 3.1 with Docker
+------------------------------------------
+# Deploy a vanilla GeoNode 3.1 with Docker
+------------------------------------------
 sudo mkdir -p /opt/geonode/
   ERR: geonode is not in the sudoers file.  This incident will be reported.
   FIX: su root
@@ -40,10 +46,44 @@ git clone https://github.com/GeoNode/geonode.git -b 3.x geonode
 cd /opt/geonode
 docker-compose -f docker-compose.yml -f docker-compose.override.localhost.yml pull
 docker-compose -f docker-compose.yml -f docker-compose.override.localhost.yml up -d
+Override the ENV variables to deploy on a public IP or domain
+cd /opt/geonode
+docker-compose stop
+cp docker-compose.override.localhost.yml docker-compose.override.mydomain.yml
+nano docker-compose.override.mydomain.yml
+----------docker-compose.override.mydomain.yml----------
+version: '2.2'
+services:
 
+  django:
+    build: .
+    # Loading the app is defined here to allow for
+    # autoreload on changes it is mounted on top of the
+    # old copy that docker added when creating the image
+    volumes:
+      - '.:/usr/src/app'
+    environment:
+      - DEBUG=False
+      - GEONODE_LB_HOST_IP=mydomain
+      - GEONODE_LB_PORT=443
+      - SITEURL=https://mydomain/
+      - ALLOWED_HOSTS=['mydomain', ]
+      - GEOSERVER_PUBLIC_LOCATION=https://mydomain/geoserver/
+      - GEOSERVER_WEB_UI_LOCATION=https://mydomain/geoserver/
 
+  geoserver:
+    environment:
+      - GEONODE_LB_HOST_IP=mydomain
+      - GEONODE_LB_PORT=443
+--------------------------------------------------------
+# Set .env file ad follows:
+# https://github.com/valeriodeluca/geonode/blob/main/.env
+docker-compose -f docker-compose.yml -f docker-compose.override.mydomain.yml up --build -d
 
-
+# If need update configuration then updates run:
+# 1. docker-compose stop
+# 2. docker-compose rm (Y)
+# 3. docker-compose -f docker-compose.yml -f docker-compose.override.mydomain.yml up --build -d
 
 
 
