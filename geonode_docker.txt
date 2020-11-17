@@ -65,7 +65,7 @@ services:
     environment:
       - DEBUG=False
       - GEONODE_LB_HOST_IP=mydomain
-      - GEONODE_LB_PORT=443
+      - GEONODE_LB_PORT=80
       - SITEURL=https://mydomain/
       - ALLOWED_HOSTS=['mydomain', ]
       - GEOSERVER_PUBLIC_LOCATION=https://mydomain/geoserver/
@@ -74,33 +74,13 @@ services:
   geoserver:
     environment:
       - GEONODE_LB_HOST_IP=mydomain
-      - GEONODE_LB_PORT=443
+      - GEONODE_LB_PORT=80
 --------------------------------------------------------
 # Set .env file ad follows:
 # https://github.com/valeriodeluca/geonode/blob/main/.env
 docker-compose -f docker-compose.yml -f docker-compose.override.mydomain.yml up --build -d
 
-# If need update configuration then updates run:
+# If need update configuration then run:
 # 1. docker-compose stop
 # 2. docker-compose rm (Y)
 # 3. docker-compose -f docker-compose.yml -f docker-compose.override.mydomain.yml up --build -d
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-  
-
-
-
