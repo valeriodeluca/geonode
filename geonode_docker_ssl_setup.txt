@@ -57,40 +57,247 @@ sudo docker-compose -f docker-compose.yml -f docker-compose.override.localhost.y
 ====================
 SSL SETUP (HTTPS)
 ====================
+ls geonode/
+nano docker-compose.yml
+# Set geonode service section as follows:
+----------docker-compose.yml----------
+  geonode:
+    image: geonode/nginx:${SET_DOCKER_ENV}
+    restart: unless-stopped
+    container_name: nginx4${COMPOSE_PROJECT_NAME}
+    stdin_open: true
+    # tty: true
+    labels:
+        org.geonode.component: nginx
+        org.geonode.instance.name: geonode
+    depends_on:
+      - django
+      - geoserver
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - statics:/mnt/volumes/statics
+      - ./nginx.conf:/etc/nginx/nginx.conf
+--------------------------------------
+Ctrl + x / y / Enter
+wget https://gist.githubusercontent.com/terrywang/9612069/raw/89c513f1c94197e236913eb0470922251f07bb15/nginx.conf
+sudo docker ps
+# Copy first ID Container and paste as follows:
+sudo docker exec -it 9d24c845920f /bin/bash
+ls /etc/nginx/
+cat /etc/nginx/nginx.conf
+# Copy /etc/nginx/nginx.conf
+----------/etc/nginx/nginx.conf----------
+user  nginx;
+worker_processes  1;
+
+error_log  /var/log/nginx/error.log warn;
+pid        /var/run/nginx.pid;
 
 
+events {
+  worker_connections  1024;
+}
 
 
+http {
+  include       /etc/nginx/mime.types;
+  default_type  application/octet-stream;
+
+  log_format  main  '$remote_addr - $remote_user [$time_local] "$request" '
+                      '$status $body_bytes_sent "$http_referer" '
+                      '"$http_user_agent" "$http_x_forwarded_for"';
+
+  access_log  /var/log/nginx/access.log  main;
+  error_log /var/log/nginx/error.log;
+
+  sendfile        on;
+  #tcp_nopush     on;
+
+  keepalive_timeout  65;
+
+  #gzip  on;
 
 
+  server{
+    listen 80;
+    index index.html index.htm;
+    root   /mnt/volumes/statics/;
+
+    location /{
+      if ($request_method = OPTIONS) {
+        add_header Access-Control-Allow-Methods "GET, POST, PUT, PATCH, OPTIONS";
+        add_header Access-Control-Allow-Headers "Authorization, Content-Type, Accept";
+        add_header Access-Control-Allow-Credentials true;
+        add_header Content-Length 0;
+        add_header Content-Type text/plain;
+        add_header Access-Control-Max-Age 1728000;
+        return 200;
+      }
+      try_files $uri @django;
+    }
+    
+    location @django {
+
+      etag off;
+      expires 0;
+      include uwsgi_params;
+      uwsgi_pass uwsgi://django:8000;
+
+      add_header Access-Control-Allow-Credentials false;
+      add_header Access-Control-Allow-Headers "Content-Type, Accept, Authorization, Origin, User-Agent";
+      add_header Access-Control-Allow-Methods "GET, POST, PUT, PATCH, OPTIONS";
+    }
 
 
+    location /geoserver {
+      etag off;
+      expires 0;
+      proxy_pass http://geoserver:8080/geoserver;
 
+      proxy_redirect     off;
+      proxy_set_header   Host $host;
+      proxy_set_header   X-Real-IP $remote_addr;
+    }
+    etag on;
+    gzip on;
 
+    client_max_body_size 100M;
+    client_body_buffer_size 128K;
 
+    proxy_connect_timeout       600;
+    proxy_send_timeout          600;
+    proxy_read_timeout          600;
+    send_timeout                600;
+    uwsgi_read_timeout          600;
 
+    expires 1d;
+    gzip_disable "msie6";
+    gzip_comp_level 6;
+    gzip_min_length 1100;
+    gzip_buffers 16 8k;
+    gzip_proxied any;
+    gzip_types
+        text/plain
+        text/css
+        text/js
+        text/xml
+        text/javascript
+        application/javascript
+        application/x-javascript
+        application/json
+        application/xml
+        application/rss+xml
+        image/svg+xml;
 
+ }
+    #include /etc/nginx/conf.d/*.conf;
+}
+-----------------------------------------
+exit
+rm nginx.conf
+nano nginx.conf
+# Paste /etc/nginx/nginx.conf lines.
+Ctrl + x / y / Enter
+sudo docker-compose stop
+sudo docker-compose rm
+y
+sudo docker-compose -f docker-compose.yml -f docker-compose.override.localhost.yml up --build -d
+docker ps
+# First ID Container get 443.
+nano nginx.conf
+# Set root line as follows:
+----------nginx.conf----------
+root /mnt/volumes/statics/x;
+------------------------------
+docker ps
+# Copy first ID Container and paste as follows:
+docker exec -it 66f23b958af6 /bin/bash
+nginx -s reload
+exit
+docker exec -it 66f23b958af6 /bin/bash
+cat /etc/nginx/nginx.conf
+# Check il the root line ends by "x". If so it take the right configuration.
+exit
+sudo apt install snapd
+snap install --classic certbot
+ln -s /snap/bin/certbot /usr/bin/certbot
+certbot --version
+# certbot 1.9.0
+certbot certonly --webroot
+# email
+# A
+# Y
+# domain or subdomain
+Ctrl + c
+docker-compose stop
+certbot certonly --standalone
+# domain or subdomain
+# Check letsencrypt dir
+ls /etc/letsencrypt/
+nano nginx.conf
+# Remove "x" in root line:
+----------nginx.conf----------
+    root   /mnt/volumes/statics/;
+------------------------------
+# Set server setcions as follows:
+----------nginx.conf----------
+  server{
+     listen     80 default_server;
+     listen         [::]:80 default_server;
+     server_name    _;
 
+    # location /{
+         return 301 https://$host$request_uri;
+    # }
+  }
 
+  server {
+     server_name 168.119.121.134;
+     return 301 https://community.mapforfuture.world$request_uri;
+  }
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+  server{
+    listen 443 ssl;
+    server_name community.mapforfuture.world;
+    index index.html index.htm;
+    root   /mnt/volumes/statics/;
+------------------------------
+# Near the end's file add two line as follows:
+----------nginx.conf----------
+        image/svg+xml;
+ 
+ ssl_certificate /etc/letsencrypt/live/my_domain/fullchain.pem;
+ ssl_certificate_key /etc/letsencrypt/live/my_domain/privkey.pem;
+ }
+    #include /etc/nginx/conf.d/*.conf;
+}
+------------------------------
+nano docker-compose.yml
+# In geonode service section add letsencrypt volume as follows:
+----------docker-compose.yml-----------
+  geonode:
+    image: geonode/nginx:${SET_DOCKER_ENV}
+    restart: unless-stopped
+    container_name: nginx4${COMPOSE_PROJECT_NAME}
+    stdin_open: true
+    # tty: true
+    labels:
+        org.geonode.component: nginx
+        org.geonode.instance.name: geonode
+    depends_on:
+      - django
+      - geoserver
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - statics:/mnt/volumes/statics
+      - ./nginx.conf:/etc/nginx/nginx.conf
+      - /etc/letsencrypt:/etc/letsencrypt
+---------------------------------------
+docker-compose stop
+docker-compose rm
+y
+docker-compose -f docker-compose.yml -f docker-compose.override.localhost.yml up --build -d
