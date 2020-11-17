@@ -1,5 +1,5 @@
 ====================
-DOCKER SETUP
+DOCKER SETUP (from: https://opensourcetutorials.in/cheetsheets/geonodeinstall/)
 ====================
 cd
 sudo apt-get update
