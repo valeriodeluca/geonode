@@ -1,0 +1,94 @@
+'''
+GeoNode-Project Docker installation
+New fresh VPS Ubuntu 20.04, RAM 8 GB, Disk 80 GB. 
+from: https://docs.geonode.org/en/master/install/advanced/project/index.html#docker
+'''
+sudo adduser geonode
+usermod -aG sudo geonode
+sudo usermod -a -G www-data geonode
+su geonode
+cd
+
+sudo apt-get install software-properties-common
+sudo apt-add-repository universe
+sudo apt update
+sudo apt upgrade
+sudo apt install python3-pip
+sudo apt install docker-compose
+sudo apt install docker.io
+sudo apt install git
+sudo apt install python3-venv
+
+sudo mkdir -p /opt/geonode_project/
+sudo chown -Rf geonode:www-data /opt/geonode_project/
+sudo chmod -Rf 775 /opt/geonode_project/
+cd /opt/geonode_project/
+
+sudo git clone https://github.com/GeoNode/geonode-project.git -b 3.x
+sudo python3.8 -m venv /home/geonode/dev/.venvs/my_geonode
+source /home/geonode/dev/.venvs/my_geonode/bin/activate
+sudo pip3 install Django==2.2.12
+
+django-admin startproject --template=./geonode-project -e py,sh,md,rst,json,yml,ini,env,sample,properties -n monitoring-cron -n Dockerfile my_geonode
+
+cd /opt/geonode_project/my_geonode
+la
+nano .env
+--------------------------.env-------------------------
+SITEURL=http://www.mfftest.eu/
+GEOSERVER_WEB_UI_LOCATION=http://www.mfftest.eu/geoserver/
+GEOSERVER_PUBLIC_LOCATION=http://www.mfftest.eu/geoserver/
+GEONODE_LB_HOST_IP=www.mfftest.eu
+HTTP_HOST= 
+HTTPS_HOST=www.mfftest.eu
+LETSENCRYPT_MODE=production
+RESOLVER=127.0.0.1
+---------------------------------------------------------
+
+
+nano docker-compose.override.mfftesteu.yml
+-----------------------docker-compose.override.mfftesteu.yml-----------------------
+version: '2.2'
+services:
+
+  django:
+    build: .
+    # Loading the app is defined here to allow for
+    # autoreload on changes it is mounted on top of the
+    # old copy that docker added when creating the image
+    volumes:
+      - '.:/usr/src/app'
+    environment:
+      - DEBUG=False
+      - GEONODE_LB_HOST_IP=www.mfftest.eu
+      - GEONODE_LB_PORT=80
+      - SITEURL=https://www.mfftest.eu/
+      - ALLOWED_HOSTS=['www.mfftest.eu', ]
+      - GEOSERVER_PUBLIC_LOCATION=https://www.mfftest.eu/geoserver/
+      - GEOSERVER_WEB_UI_LOCATION=https://www.mfftest.eu/geoserver/
+
+  celery:
+    build: .
+    volumes:
+      - '.:/usr/src/app'
+    environment:
+      - DEBUG=False
+      - GEONODE_LB_HOST_IP=www.mfftest.eu
+      - GEONODE_LB_PORT=80
+      - SITEURL=https://www.mfftest.eu/
+      - ALLOWED_HOSTS=['www.mfftest.eu', ]
+      - GEOSERVER_PUBLIC_LOCATION=https://www.mfftest.eu/geoserver/
+      - GEOSERVER_WEB_UI_LOCATION=https://www.mfftest.eu/geoserver/
+
+  geoserver:
+    environment:
+      - GEONODE_LB_HOST_IP=www.mfftest.eu
+      - GEONODE_LB_PORT=80
+----------------------------------­-------------------------------------------------------------------
+
+
+sudo systemctl enable docker
+sudo systemctl start docker
+
+sudo docker-compose -f docker-compose.yml -f docker-compose.override.mfftesteu.yml up --build -d
+
